@@ -2,7 +2,7 @@ const MC_ADDRESS = 0x24
 
 // 分类基地址
 const CLASS_BASE = 15
-// 分类地址
+// 分类寄存器
 const CLASS_CTRL = CLASS_BASE + 0x00      
 const CLASS_LEN = CLASS_BASE + 0x01       
 const CLASS_PATH = CLASS_BASE + 0x02     
@@ -11,7 +11,7 @@ const CLASS_SCORE = CLASS_BASE + 0x04
 
 // 检测基地址
 const DETECT_BASE = 30
-// 分类地址
+// 分类寄存器
 const DETECT_CTRL = DETECT_BASE + 0x00
 const DETECT_LEN = DETECT_BASE + 0x01
 const DETECT_PATH = DETECT_BASE + 0x02
@@ -24,6 +24,19 @@ const DETECT_OBJ3 = DETECT_BASE + 0x08
 const DETECT_OBJ4 = DETECT_BASE + 0x09
 const DETECT_CLASSES = DETECT_BASE + 0x0A
 const DETECT_PARAM = DETECT_BASE + 0x0B
+
+// 系统设置基地址
+const SYS_BASE = 0
+// 系统寄存器
+const SYS_MODE = SYS_BASE + 0x00
+const SYS_BOOT = SYS_BASE + 0x01
+const SYS_SD = SYS_BASE + 0x02
+const SYS_STATUS = SYS_BASE + 0x03
+const SYS_RELOAD = SYS_BASE + 0x04
+const SYS_FILL_LIGHT = SYS_BASE + 0x05
+const SYS_COMM = SYS_BASE + 0x06
+const SYS_BACKLIGHT = SYS_BASE + 0x07
+const SYS_LANGUAGE = SYS_BASE + 0x08
 
 function writeReg(reg: number, value: number): void {
     let buf = pins.createBuffer(2)
@@ -75,6 +88,13 @@ enum DetectData {
     Width,
     //% block="Height"
     Height
+}
+
+enum Language {
+    //% block="Chinese"
+    Chinese = 0,
+    //% block="English"
+    English = 1
 }
 
 //% color="#4B7BEC"
@@ -147,19 +167,16 @@ namespace AI_Vision_MC {
     //% group="Detect Mode"
     export function setDetectModel(path: string): void {
         let pathBuf = control.createBufferFromUTF8(path)
-
         if (pathBuf.length > 127)
             return
 
         writeReg(DETECT_LEN, pathBuf.length)
-
         let buf = pins.createBuffer(pathBuf.length + 1)
         buf[0] = DETECT_PATH
 
         for (let i = 0; i < pathBuf.length; i++) {
             buf[i + 1] = pathBuf[i]
         }
-
         pins.i2cWriteBuffer(MC_ADDRESS, buf)
     }
 
@@ -170,19 +187,16 @@ namespace AI_Vision_MC {
     //% group="Detect Mode"
     export function setDetectAnchor(anchor: string): void {
         let bufAnchor = control.createBufferFromUTF8(anchor)
-
         if (bufAnchor.length > 200)
             return
 
         writeReg(DETECT_ANCHOR_LEN, bufAnchor.length)
-
         let buf = pins.createBuffer(bufAnchor.length + 1)
         buf[0] = DETECT_ANCHOR
 
         for (let i = 0; i < bufAnchor.length; i++) {
             buf[i + 1] = bufAnchor[i]
         }
-
         pins.i2cWriteBuffer(MC_ADDRESS, buf)
     }
 
@@ -228,28 +242,59 @@ namespace AI_Vision_MC {
     //% weight=74
     //% group="Detect Mode"
     export function getDetectData(data: DetectData, obj: DetectObject): number {
-
         let buf = getDetectObject(obj)
-
         switch (data) {
-
             case DetectData.ID:
                 return buf[0]
-
             case DetectData.CenterX:
                 return (buf[1] << 8) | buf[2]
-
             case DetectData.CenterY:
                 return (buf[3] << 8) | buf[4]
-
             case DetectData.Width:
                 return (buf[5] << 8) | buf[6]
-
             case DetectData.Height:
                 return (buf[7] << 8) | buf[8]
         }
-
         return 0
+    }
+
+    //设置补光灯
+    //% blockId=MCSetFillLight
+    //% block="set fill light brightness $value"
+    //% value.min=0
+    //% value.max=10
+    //% value.defl=5
+    //% weight=60
+    //% group="Settings"
+    export function setFillLight(value: number): void {
+        if (value < 0) value = 0
+        if (value > 10) value = 10
+
+        writeReg(SYS_FILL_LIGHT, value)
+    }
+
+    //设置屏幕背光
+    //% blockId=MCSetBackLight
+    //% block="set screen brightness $value"
+    //% value.min=0
+    //% value.max=10
+    //% value.defl=5
+    //% weight=59
+    //% group="Settings"
+    export function setBackLight(value: number): void {
+        if (value < 0) value = 0
+        if (value > 10) value = 10
+
+        writeReg(SYS_BACKLIGHT, value)
+    }
+
+    //设置语音
+    //% blockId=MCSetLanguage
+    //% block="set language $language"
+    //% weight=58
+    //% group="Settings"
+    export function setLanguage(language: Language): void {
+        writeReg(SYS_LANGUAGE, language)
     }
 
 }
