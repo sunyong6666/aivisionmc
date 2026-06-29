@@ -152,11 +152,11 @@ namespace AI_Vision_MC {
     }
 
     //% blockId=MCClassifyState
-    //% block="classify state"
+    //% block="classify confidence"
     //% weight=87
     //% group="Classify Mode"
     export function classifyState(): number {
-        return readReg(CLASS_CTRL)
+        return readReg(CLASS_SCORE)
     }
 
     //--------------------------检测模式---------------------
